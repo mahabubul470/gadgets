@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Product Category Page</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3">
+          <!-- Filter Options -->
+          <h4>Filter Options</h4>
+          <form id="filterForm">
+            {% for filter_option in filter_options %}
+              <h5>{{ filter_option.name }}</h5>
+              <div class="form-check">
+                {% for choice in filter_choices %}
+                  {% if filter_option == choice.option %}
+                    <input class="form-check-input" type="checkbox" name="{{ choice.option }}" value="{{ choice.value }}" id="{{ choice.id }}" />
+                    <label class="form-check-label" for="{{ choice.id }}">{{ choice.value }}</label><br />
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+          </form>
+        </div>
+        <div class="col-md-9">
+          <h4>Products</h4>
+          <div id="productList">
+            {% for product in object_list %}
+              <div class="card mb-3">
+                <div class="row no-gutters">
+                  <div class="col-md-4">
+                    <img src="{{ product.image.url }}" class="card-img" alt="{{ product.name }}" />
+                  </div>
+                  <div class="col-md-8">
+                    <div class="card-body">
+                      <h5 class="card-title">{{ product.name }}</h5>
+                      <p class="card-text">Price: ${{ product.price }}</p>
+                      <p class="card-text">Quantity: {{ product.quantity }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% empty %}
+              <p>No products found.</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
+    <script>
+  $(document).ready(function () {
+    // Handle checkbox change
+    $('.form-check-input').change(function () {
+      // Trigger form submission
+      $('#filterForm').submit()
+    })
+
+    // Handle form submission
+    $('#filterForm').submit(function (event) {
+      event.preventDefault()
+      var formData = $(this).serialize()
+
+      // Send AJAX request to retrieve filtered products
+      $.ajax({
+        url: "{% url 'filtered-products' %}",
+        type: 'GET',
+        data: formData,
+        beforeSend: function () {
+          // Show loading animation
+          $('#loadingSpinner').show();
+          $('#productList').empty(); // Clear previous products
+        },
+        success: function (response) {
+          var productList = $('#productList')
+          productList.empty() // Clear previous products
+          console.log(response)
+          if (response.length > 0) {
+            // Iterate over the filtered products data and create HTML elements
+            for (var i = 0; i < response.length; i++) {
+              var product = response[i]
+
+              // Create a card element for each product
+              var card = $('<div>').addClass('card mb-3')
+              var row = $('<div>').addClass('row no-gutters')
+              var colImg = $('<div>').addClass('col-md-4')
+              var img = $('<img>').attr('src', product.image_url).addClass('card-img').attr('alt', product.name)
+              var colBody = $('<div>').addClass('col-md-8')
+              var cardBody = $('<div>').addClass('card-body')
+              var title = $('<h5>').addClass('card-title').text(product.name)
+              var price = $('<p>')
+                .addClass('card-text')
+                .text('Price:  ৳ ' + product.price)
+              var quantity = $('<p>')
+                .addClass('card-text')
+                .text('Quantity: ' + product.quantity)
+              // Append the elements to construct the card structure
+              colImg.append(img)
+              cardBody.append(title, price, quantity)
+              colBody.append(cardBody)
+              row.append(colImg, colBody)
+              card.append(row)
+
+              // Append the card to the product list with animation
+              productList.append(card.hide().fadeIn(500));
+            }
+          } else {
+            // Display a message when no products are found
+            productList.html('<p>No products found.</p>')
+          }
+        },
+        complete: function () {
+          // Hide loading animation
+          $('#loadingSpinner').hide();
+        },
+        error: function (xhr, status, error) {
+          console.error(xhr.responseText)
+        }
+      })
+    })
+  })
+</script>
+
+  </body>
+</html>
